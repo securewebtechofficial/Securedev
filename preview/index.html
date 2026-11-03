@@ -82,6 +82,8 @@
   .cart-upsell__button .loading__spinner .spinner { width: 1.6rem; height: 1.6rem; }
   .cart-upsell__button .loading__spinner .path { stroke: currentColor; }
   .cart-upsell__button-icon { width: 1.4rem; height: 1.4rem; }
+  .cart-upsell__button--icon { width: 3.6rem; height: 3.6rem; min-height: 3.6rem; padding: 0; border-radius: 50%; }
+  .cart-upsell__button.loading .cart-upsell__button-icon { visibility: hidden; }
   .cart-upsell__error { margin: 1rem 0 0; font-size: 1.3rem; color: rgb(var(--color-error, 200, 0, 0)); }
   .hidden { display: none !important; }
   .spinner { animation: rotator 1.4s linear infinite; }
@@ -153,8 +155,7 @@
                 <form class="cart-upsell__form" data-cart-upsell-form action="/cart/add" method="post">
                   <input type="hidden" name="id" value="111">
                   <input type="hidden" name="quantity" value="1">
-                  <button type="submit" class="cart-upsell__button" data-upsell-button>
-                    <span class="cart-upsell__button-text">Add to cart</span>
+                  <button type="submit" class="cart-upsell__button cart-upsell__button--icon" data-upsell-button aria-label="Add to cart: Leather care kit">
                     <span class="svg-wrapper cart-upsell__button-icon">
                       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5"/></svg>
                     </span>
@@ -177,8 +178,7 @@
                 <form class="cart-upsell__form" data-cart-upsell-form action="/cart/add" method="post">
                   <input type="hidden" name="id" value="222">
                   <input type="hidden" name="quantity" value="1">
-                  <button type="submit" class="cart-upsell__button" data-upsell-button>
-                    <span class="cart-upsell__button-text">Add to cart</span>
+                  <button type="submit" class="cart-upsell__button cart-upsell__button--icon" data-upsell-button aria-label="Add to cart: Wool socks">
                     <span class="svg-wrapper cart-upsell__button-icon">
                       <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5"/></svg>
                     </span>
