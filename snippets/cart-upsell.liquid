@@ -191,8 +191,12 @@
               <form class="cart-upsell__form" data-cart-upsell-form action="{{ routes.cart_add_url }}" method="post">
                 <input type="hidden" name="id" value="{{ variant.id }}">
                 <input type="hidden" name="quantity" value="1">
-                <button type="submit" class="cart-upsell__button" data-upsell-button>
-                  <span class="cart-upsell__button-text">{{ 'products.product.add_to_cart' | t }}</span>
+                <button
+                  type="submit"
+                  class="cart-upsell__button cart-upsell__button--icon"
+                  data-upsell-button
+                  aria-label="{{ 'products.product.add_to_cart' | t }}: {{ product.title | escape }}"
+                >
                   <span class="svg-wrapper cart-upsell__button-icon">
                     {{- 'icon-plus.svg' | inline_asset_content -}}
                   </span>

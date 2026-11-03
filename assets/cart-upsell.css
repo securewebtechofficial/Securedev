@@ -221,6 +221,19 @@
   height: 1.4rem;
 }
 
+/* Icon-only add button: just the plus symbol, no label text. */
+.cart-upsell__button--icon {
+  width: 3.6rem;
+  height: 3.6rem;
+  min-height: 3.6rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.cart-upsell__button.loading .cart-upsell__button-icon {
+  visibility: hidden;
+}
+
 .cart-upsell__error {
   margin: 1rem 0 0;
   font-size: 1.3rem;

@@ -113,7 +113,9 @@ border is drawn per fragment. `assets/cart-upsell.css` fixes this with `display:
 
 ## Limitations
 
-- Single-variant products get an **Add** button that adds the first available variant. Products with
+- Single-variant products get a round **+** button (icon only, no label text) that adds the first
+  available variant. The button carries an `aria-label` of `Add to cart: <product title>` so it is
+  still announced by screen readers; if you switch to another icon, keep that label. Products with
   variants show a **Choose options** link to the product page instead, to avoid adding the wrong
   variant. If you want in-place variant selection, that is a follow-up.
 - The heading and the error text default to English. Set the heading in theme settings; for a
