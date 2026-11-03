@@ -1,0 +1,216 @@
+{% doc %}
+  Renders cross-sell / upsell product suggestions inside the cart drawer.
+
+  Suggestions are collected, in priority order, from:
+    1. The `custom.cart_upsell` product-list metafield on products already in the cart
+       (product-specific add-ons / "frequently bought together").
+    2. The `cart_upsell_products` theme setting (product list).
+    3. The `cart_upsell_collection` theme setting (collection).
+  Products already in the cart, unavailable products, and duplicates are skipped.
+
+  The block only renders while the cart has items and at least one suggestion is left.
+  It lives inside <cart-drawer-items>, so the cart drawer's own section refresh
+  (fetched from ?section_id=cart-drawer) re-renders it after every cart change.
+
+  @param {cart} cart - The cart object (required).
+  @param {string} [heading] - Heading text. Defaults to the cart_upsell_heading setting.
+  @param {collection} [collection] - Collection to pull suggestions from (optional override).
+  @param {product_list} [products] - Product list to pull suggestions from (optional override).
+  @param {number} [limit] - Maximum number of suggestions. Defaults to the cart_upsell_limit setting.
+
+  @example
+  {% render 'cart-upsell', cart: cart %}
+{% enddoc %}
+
+{{ 'cart-upsell.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'cart-upsell.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  assign upsell_limit = limit | default: settings.cart_upsell_limit | default: 2
+  assign upsell_heading = heading | default: settings.cart_upsell_heading
+  assign upsell_collection = collection | default: settings.cart_upsell_collection
+  assign upsell_products = products | default: settings.cart_upsell_products
+
+  assign show_upsell = false
+  if cart.item_count > 0 and upsell_limit > 0
+    assign show_upsell = true
+  endif
+
+  assign in_cart_ids = ','
+  for item in cart.items
+    assign in_cart_ids = in_cart_ids | append: item.product_id | append: ','
+  endfor
+
+  assign seen_handles = ','
+  assign handles = ''
+
+  for item in cart.items
+    assign metafield_products = item.product.metafields.custom.cart_upsell.value
+    for suggestion in metafield_products
+      assign id_tag = ',' | append: suggestion.id | append: ','
+      assign handle_tag = ',' | append: suggestion.handle | append: ','
+      if suggestion.available
+        unless in_cart_ids contains id_tag
+          unless seen_handles contains handle_tag
+            assign handles = handles | append: suggestion.handle | append: ','
+            assign seen_handles = seen_handles | append: suggestion.handle | append: ','
+          endunless
+        endunless
+      endif
+    endfor
+  endfor
+
+  for entry in upsell_products
+    assign suggestion = entry
+    if entry.handle == blank
+      assign suggestion = all_products[entry]
+    endif
+    if suggestion != blank
+      assign id_tag = ',' | append: suggestion.id | append: ','
+      assign handle_tag = ',' | append: suggestion.handle | append: ','
+      if suggestion.available
+        unless in_cart_ids contains id_tag
+          unless seen_handles contains handle_tag
+            assign handles = handles | append: suggestion.handle | append: ','
+            assign seen_handles = seen_handles | append: suggestion.handle | append: ','
+          endunless
+        endunless
+      endif
+    endif
+  endfor
+
+  if upsell_collection != blank
+    for suggestion in upsell_collection.products
+      assign id_tag = ',' | append: suggestion.id | append: ','
+      assign handle_tag = ',' | append: suggestion.handle | append: ','
+      if suggestion.available
+        unless in_cart_ids contains id_tag
+          unless seen_handles contains handle_tag
+            assign handles = handles | append: suggestion.handle | append: ','
+            assign seen_handles = seen_handles | append: suggestion.handle | append: ','
+          endunless
+        endunless
+      endif
+    endfor
+  endif
+
+  assign handle_list = handles | split: ','
+
+  assign upsell_count = 0
+  for handle in handle_list
+    if handle != blank and upsell_count < upsell_limit
+      assign upsell_count = upsell_count | plus: 1
+    endif
+  endfor
+-%}
+
+{%- if show_upsell and upsell_count > 0 -%}
+  <cart-upsell class="cart-upsell" data-error-message="Sorry, we could not add this item. Please try again.">
+    <div class="cart-upsell__header">
+      <h3 class="cart-upsell__heading h5">
+        {{- upsell_heading | default: 'You may also like' | escape -}}
+      </h3>
+      <div class="cart-upsell__nav">
+        <button
+          type="button"
+          class="cart-upsell__nav-button"
+          data-upsell-prev
+          aria-label="{{ 'general.slider.previous_slide' | t }}"
+        >
+          <span class="svg-wrapper">
+            <svg viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+              <path d="M6.5 1 2.5 5l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+        <button
+          type="button"
+          class="cart-upsell__nav-button"
+          data-upsell-next
+          aria-label="{{ 'general.slider.next_slide' | t }}"
+        >
+          <span class="svg-wrapper">
+            <svg viewBox="0 0 10 10" fill="none" aria-hidden="true" focusable="false">
+              <path d="M3.5 1 7.5 5l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <ul
+      class="cart-upsell__list list-unstyled"
+      role="list"
+      tabindex="0"
+      aria-label="{{ upsell_heading | default: 'You may also like' | escape }}"
+    >
+      {%- assign rendered = 0 -%}
+      {%- for handle in handle_list -%}
+        {%- if rendered >= upsell_limit -%}
+          {%- break -%}
+        {%- endif -%}
+        {%- if handle == blank -%}
+          {%- continue -%}
+        {%- endif -%}
+
+        {%- assign product = all_products[handle] -%}
+        {%- if product == blank or product.available == false -%}
+          {%- continue -%}
+        {%- endif -%}
+        {%- assign variant = product.selected_or_first_available_variant -%}
+        {%- if variant == blank or variant.available == false -%}
+          {%- continue -%}
+        {%- endif -%}
+
+        <li class="cart-upsell__item">
+          {%- if product.featured_image -%}
+            <a href="{{ product.url }}" class="cart-upsell__media" tabindex="-1" aria-hidden="true" draggable="false">
+              <img
+                src="{{ product.featured_image | image_url: width: 160 }}"
+                alt="{{ product.featured_image.alt | escape }}"
+                class="cart-upsell__image"
+                loading="lazy"
+                draggable="false"
+                width="72"
+                height="{{ 72 | divided_by: product.featured_image.aspect_ratio | round }}"
+              >
+            </a>
+          {%- endif -%}
+
+          <div class="cart-upsell__content">
+            <a href="{{ product.url }}" class="cart-upsell__title">{{ product.title | escape }}</a>
+
+            <div class="cart-upsell__price">
+              {%- if variant.compare_at_price > variant.price -%}
+                <s class="cart-upsell__price-was">{{ variant.compare_at_price | money }}</s>
+              {%- endif -%}
+              <span class="cart-upsell__price-current">{{ variant.price | money }}</span>
+            </div>
+
+            {%- if product.has_only_default_variant -%}
+              <form class="cart-upsell__form" data-cart-upsell-form action="{{ routes.cart_add_url }}" method="post">
+                <input type="hidden" name="id" value="{{ variant.id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="cart-upsell__button" data-upsell-button>
+                  <span class="cart-upsell__button-text">{{ 'products.product.add_to_cart' | t }}</span>
+                  <span class="svg-wrapper cart-upsell__button-icon">
+                    {{- 'icon-plus.svg' | inline_asset_content -}}
+                  </span>
+                  {%- render 'loading-spinner' -%}
+                </button>
+              </form>
+            {%- else -%}
+              <a href="{{ product.url }}" class="cart-upsell__button cart-upsell__button--link">
+                {{- 'products.product.choose_options' | t -}}
+              </a>
+            {%- endif -%}
+          </div>
+        </li>
+
+        {%- assign rendered = rendered | plus: 1 -%}
+      {%- endfor -%}
+    </ul>
+
+    <p class="cart-upsell__error" role="alert" hidden></p>
+  </cart-upsell>
+{%- endif -%}

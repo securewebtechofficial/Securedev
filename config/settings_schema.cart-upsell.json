@@ -1,0 +1,35 @@
+[
+  {
+    "type": "header",
+    "content": "Cart upsell"
+  },
+  {
+    "type": "text",
+    "id": "cart_upsell_heading",
+    "label": "Heading",
+    "default": "You may also like"
+  },
+  {
+    "type": "product_list",
+    "id": "cart_upsell_products",
+    "label": "Upsell products",
+    "info": "Suggest these products in the cart drawer. Products already in the cart are hidden.",
+    "limit": 6
+  },
+  {
+    "type": "collection",
+    "id": "cart_upsell_collection",
+    "label": "Upsell collection",
+    "info": "Fallback source used when no individual upsell products are chosen."
+  },
+  {
+    "type": "range",
+    "id": "cart_upsell_limit",
+    "label": "Maximum suggestions",
+    "info": "Set to 2 or more so two products show at once (first card 60%, next card peeks at 40%).",
+    "min": 2,
+    "max": 4,
+    "step": 1,
+    "default": 2
+  }
+]

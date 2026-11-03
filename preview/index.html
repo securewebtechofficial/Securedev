@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cart drawer upsell — static preview</title>
+<style>
+  :root {
+    --color-foreground: 18, 18, 18;
+    --color-background: 255, 255, 255;
+    --color-button: 18, 18, 18;
+    --color-button-text: 255, 255, 255;
+    --alpha-button-border: 1;
+    --buttons-radius: 0.4rem;
+    --media-radius: 0.4rem;
+    --color-error: 200, 0, 0;
+    --font-body-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --duration-short: 100ms;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 62.5%; }
+  body { margin: 0; font-family: var(--font-body-family); font-size: 1.4rem; color: rgb(var(--color-foreground)); background: #eff1f3; }
+  .list-unstyled { list-style: none; margin: 0; padding: 0; }
+  .h5 { font-size: 1.5rem; }
+  .page { max-width: 960px; margin: 0 auto; padding: 3rem 2rem; }
+  .preview-note { display: inline-block; margin-bottom: 2rem; padding: 0.6rem 1rem; border-radius: 0.4rem; background: #fff7e0; border: 1px solid #f0dca0; font-size: 1.3rem; }
+  .toolbar { display: flex; gap: 1.2rem; align-items: center; }
+  .toolbar button { font: inherit; padding: 1rem 1.6rem; border: 0; border-radius: 0.4rem; background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); cursor: pointer; }
+  .badge { display: inline-flex; min-width: 2rem; height: 2rem; padding: 0 0.6rem; align-items: center; justify-content: center; border-radius: 1rem; background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); font-size: 1.2rem; }
+
+  /* ---- Drawer (subset of Dawn component-cart-drawer.css) ---- */
+  .drawer { position: fixed; inset: 0; z-index: 1000; display: flex; justify-content: flex-end; background: rgba(var(--color-foreground), 0.5); visibility: hidden; transition: visibility var(--duration-short) ease; }
+  .drawer.active { visibility: visible; }
+  .drawer__inner { height: 100%; width: 40rem; max-width: calc(100vw - 3rem); padding: 0 1.5rem; background: rgb(var(--color-background)); border-left: 0.1rem solid rgba(var(--color-foreground), 0.2); overflow: hidden; display: flex; flex-direction: column; transform: translateX(100%); transition: transform var(--duration-short) ease; }
+  .drawer.active .drawer__inner { transform: translateX(0); }
+  .drawer__header { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; }
+  .drawer__heading { margin: 0; font-size: 1.8rem; }
+  .drawer__close { border: 0; background: none; font-size: 2.2rem; line-height: 1; cursor: pointer; padding: 0.4rem; }
+  cart-drawer-items { overflow: auto; flex: 1; }
+  .cart-item { display: flex; gap: 1.2rem; padding: 1.5rem 0; border-bottom: 0.1rem solid rgba(var(--color-foreground), 0.08); align-items: center; }
+  .cart-item__image { width: 6.4rem; height: 6.4rem; object-fit: cover; border-radius: var(--media-radius); }
+  .cart-item__details { flex: 1 1 auto; min-width: 0; }
+  .cart-item__name { display: block; font-weight: 500; text-decoration: none; color: rgb(var(--color-foreground)); }
+  .cart-item__price { margin-top: 0.4rem; opacity: 0.75; }
+  .drawer__footer { border-top: 0.1rem solid rgba(var(--color-foreground), 0.2); padding: 1.5rem 0; }
+  .totals { display: flex; justify-content: space-between; align-items: baseline; }
+  .totals__total { margin: 0; font-size: 1.5rem; }
+  .totals__total-value { margin: 0; font-weight: 600; }
+  .cart__checkout-button { width: 100%; margin-top: 1.5rem; }
+  .button { display: inline-block; padding: 1.2rem 1.6rem; border: 0; border-radius: var(--buttons-radius); background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); text-align: center; cursor: pointer; }
+
+  /* ================= cart-upsell.css (verbatim from assets/) ================= */
+  .cart-upsell { display: block; box-sizing: border-box; margin: 0 0 1.5rem; padding: 1.2rem; border: 0.1rem solid rgba(var(--color-foreground), 0.08); border-radius: var(--media-radius, 0.6rem); background: rgba(var(--color-foreground), 0.03); background-clip: padding-box; }
+  .cart-upsell__item { border: 0; }
+  .cart-upsell__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+  .cart-upsell__heading { margin: 0; }
+  .cart-upsell__nav { display: flex; flex: 0 0 auto; gap: 0.4rem; }
+  .cart-upsell__nav-button { display: inline-flex; align-items: center; justify-content: center; width: 3rem; height: 3rem; padding: 0; border: 0.1rem solid rgba(var(--color-foreground), 0.15); border-radius: 50%; background: rgb(var(--color-background)); color: rgb(var(--color-foreground)); cursor: pointer; }
+  .cart-upsell__nav-button:hover { opacity: 0.8; }
+  .cart-upsell__nav-button[disabled] { opacity: 0.35; cursor: default; }
+  .cart-upsell__nav-button .svg-wrapper { width: 1.4rem; height: 1.4rem; }
+  .cart-upsell--static .cart-upsell__nav { display: none; }
+  .cart-upsell__list { display: flex; flex-direction: row; gap: 1.2rem; margin: 0; padding: 0 0 0.4rem; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; }
+  .cart-upsell__list::-webkit-scrollbar { display: none; }
+  .cart-upsell:not(.cart-upsell--static) .cart-upsell__list { cursor: grab; }
+  .cart-upsell__list.is-dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
+  .cart-upsell__list:focus-visible { outline: 0.2rem solid rgba(var(--color-foreground), 0.5); outline-offset: 0.3rem; }
+  .cart-upsell__item { display: flex; flex: 0 0 calc(60% - 0.6rem); gap: 1.2rem; align-items: center; scroll-snap-align: start; }
+  .cart-upsell--static .cart-upsell__item { flex-basis: 100%; }
+  .cart-upsell__media { display: block; flex: 0 0 auto; width: 7.2rem; }
+  .cart-upsell__image { display: block; width: 7.2rem; height: 7.2rem; object-fit: cover; border-radius: var(--media-radius, 0.4rem); background: rgba(var(--color-foreground), 0.05); }
+  .cart-upsell__content { display: flex; flex: 1 1 auto; flex-direction: column; gap: 0.4rem; min-width: 0; }
+  .cart-upsell__title { font-size: 1.4rem; line-height: 1.3; color: rgb(var(--color-foreground)); text-decoration: none; word-break: break-word; }
+  .cart-upsell__title:hover { text-decoration: underline; text-underline-offset: 0.3rem; }
+  .cart-upsell__price { display: flex; align-items: center; gap: 0.6rem; font-size: 1.3rem; }
+  .cart-upsell__price-was { opacity: 0.6; }
+  .cart-upsell__form { margin: 0; }
+  .cart-upsell__button { display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem; width: 100%; min-height: 3.6rem; padding: 0.6rem 1.2rem; border: 0.1rem solid rgba(var(--color-button), var(--alpha-button-border, 1)); border-radius: var(--buttons-radius, 0.4rem); background: rgb(var(--color-button)); color: rgb(var(--color-button-text)); font-family: var(--font-body-family); font-size: 1.3rem; line-height: 1; text-align: center; text-decoration: none; cursor: pointer; transition: opacity var(--duration-short) ease; }
+  .cart-upsell__button:hover { opacity: 0.85; }
+  .cart-upsell__button.loading { opacity: 0.7; pointer-events: none; }
+  .cart-upsell__button .loading__spinner { position: static; width: 1.6rem; height: 1.6rem; margin: 0; }
+  .cart-upsell__button .loading__spinner .spinner { width: 1.6rem; height: 1.6rem; }
+  .cart-upsell__button .loading__spinner .path { stroke: currentColor; }
+  .cart-upsell__button-icon { width: 1.4rem; height: 1.4rem; }
+  .cart-upsell__error { margin: 1rem 0 0; font-size: 1.3rem; color: rgb(var(--color-error, 200, 0, 0)); }
+  .hidden { display: none !important; }
+  .spinner { animation: rotator 1.4s linear infinite; }
+  .path { stroke-dasharray: 280; animation: dash 1.4s ease-in-out infinite; transform-origin: center; }
+  @keyframes rotator { 0% { transform: rotate(0); } 100% { transform: rotate(270deg); } }
+  @keyframes dash { 0% { stroke-dashoffset: 280; } 50% { stroke-dashoffset: 75; } 100% { stroke-dashoffset: 280; } }
+</style>
+</head>
+<body>
+  <div class="page">
+    <p class="preview-note">Static preview of the cart-drawer upsell. No store connection — clicking “Add” simulates the AJAX add.</p>
+    <div class="toolbar">
+      <button type="button" id="open-cart">Open cart <span class="badge" id="cart-count">2</span></button>
+    </div>
+  </div>
+
+  <cart-drawer id="drawer" class="drawer">
+    <div class="drawer__inner">
+      <div class="drawer__header">
+        <h2 class="drawer__heading">Your cart</h2>
+        <button class="drawer__close" type="button" data-close aria-label="Close">&times;</button>
+      </div>
+
+      <cart-drawer-items>
+        <div id="cart-items">
+          <div class="cart-item" data-price="24.00">
+            <img class="cart-item__image" alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23c9d7e4'/%3E%3C/svg%3E">
+            <div class="cart-item__details">
+              <a class="cart-item__name" href="#">Linen shirt</a>
+              <div class="cart-item__price">$24.00 · Qty 1</div>
+            </div>
+          </div>
+          <div class="cart-item" data-price="38.00">
+            <img class="cart-item__image" alt="" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23dfe6cd'/%3E%3C/svg%3E">
+            <div class="cart-item__details">
+              <a class="cart-item__name" href="#">Canvas tote</a>
+              <div class="cart-item__price">$38.00 · Qty 1</div>
+            </div>
+          </div>
+        </div>
+
+        <cart-upsell class="cart-upsell" data-error-message="Sorry, we could not add this item. Please try again.">
+          <div class="cart-upsell__header">
+            <h3 class="cart-upsell__heading h5">You may also like</h3>
+            <div class="cart-upsell__nav">
+              <button type="button" class="cart-upsell__nav-button" data-upsell-prev aria-label="Slide left">
+                <span class="svg-wrapper">
+                  <svg viewBox="0 0 10 10" width="14" height="14" fill="none" aria-hidden="true"><path d="M6.5 1 2.5 5l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </button>
+              <button type="button" class="cart-upsell__nav-button" data-upsell-next aria-label="Slide right">
+                <span class="svg-wrapper">
+                  <svg viewBox="0 0 10 10" width="14" height="14" fill="none" aria-hidden="true"><path d="M3.5 1 7.5 5l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+              </button>
+            </div>
+          </div>
+          <ul class="cart-upsell__list list-unstyled" role="list" tabindex="0" aria-label="You may also like">
+            <li class="cart-upsell__item" data-price="9.00">
+              <a href="#" class="cart-upsell__media" tabindex="-1" aria-hidden="true" draggable="false">
+                <img class="cart-upsell__image" alt="" draggable="false" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Crect width='72' height='72' fill='%23f2d9c2'/%3E%3C/svg%3E">
+              </a>
+              <div class="cart-upsell__content">
+                <a href="#" class="cart-upsell__title">Leather care kit</a>
+                <div class="cart-upsell__price">
+                  <s class="cart-upsell__price-was">$12.00</s>
+                  <span class="cart-upsell__price-current">$9.00</span>
+                </div>
+                <form class="cart-upsell__form" data-cart-upsell-form action="/cart/add" method="post">
+                  <input type="hidden" name="id" value="111">
+                  <input type="hidden" name="quantity" value="1">
+                  <button type="submit" class="cart-upsell__button" data-upsell-button>
+                    <span class="cart-upsell__button-text">Add to cart</span>
+                    <span class="svg-wrapper cart-upsell__button-icon">
+                      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </span>
+                    <div class="loading__spinner hidden">
+                      <svg class="spinner" viewBox="0 0 66 66"><circle class="path" stroke-width="6" cx="33" cy="33" r="30" fill="none"/></svg>
+                    </div>
+                  </button>
+                </form>
+              </div>
+            </li>
+            <li class="cart-upsell__item" data-price="16.50">
+              <a href="#" class="cart-upsell__media" tabindex="-1" aria-hidden="true" draggable="false">
+                <img class="cart-upsell__image" alt="" draggable="false" src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Crect width='72' height='72' fill='%23cfe3d9'/%3E%3C/svg%3E">
+              </a>
+              <div class="cart-upsell__content">
+                <a href="#" class="cart-upsell__title">Wool socks</a>
+                <div class="cart-upsell__price">
+                  <span class="cart-upsell__price-current">$16.50</span>
+                </div>
+                <form class="cart-upsell__form" data-cart-upsell-form action="/cart/add" method="post">
+                  <input type="hidden" name="id" value="222">
+                  <input type="hidden" name="quantity" value="1">
+                  <button type="submit" class="cart-upsell__button" data-upsell-button>
+                    <span class="cart-upsell__button-text">Add to cart</span>
+                    <span class="svg-wrapper cart-upsell__button-icon">
+                      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="1.5"/></svg>
+                    </span>
+                    <div class="loading__spinner hidden">
+                      <svg class="spinner" viewBox="0 0 66 66"><circle class="path" stroke-width="6" cx="33" cy="33" r="30" fill="none"/></svg>
+                    </div>
+                  </button>
+                </form>
+              </div>
+            </li>
+          </ul>
+          <p class="cart-upsell__error" role="alert" hidden></p>
+        </cart-upsell>
+      </cart-drawer-items>
+
+      <div class="drawer__footer">
+        <div class="totals">
+          <h2 class="totals__total">Estimated total</h2>
+          <p class="totals__total-value" id="subtotal">$62.00</p>
+        </div>
+        <button class="button cart__checkout-button" type="button">Checkout</button>
+      </div>
+    </div>
+  </cart-drawer>
+
+<script>
+  const drawer = document.getElementById('drawer');
+  const items = document.getElementById('cart-items');
+  const subtotalEl = document.getElementById('subtotal');
+  const countEl = document.getElementById('cart-count');
+  const money = (n) => '$' + n.toFixed(2);
+
+  function refreshTotals() {
+    const total = [...items.querySelectorAll('.cart-item')]
+      .reduce((sum, el) => sum + parseFloat(el.dataset.price), 0);
+    subtotalEl.textContent = money(total);
+    countEl.textContent = items.querySelectorAll('.cart-item').length;
+  }
+
+  document.getElementById('open-cart').addEventListener('click', () => drawer.classList.add('active'));
+  drawer.querySelector('[data-close]').addEventListener('click', () => drawer.classList.remove('active'));
+
+  class CartUpsellPreview extends HTMLElement {
+    constructor() {
+      super();
+      this.addEventListener('submit', (event) => this.add(event));
+    }
+    connectedCallback() {
+      this.list = this.querySelector('.cart-upsell__list');
+      this.prevButton = this.querySelector('[data-upsell-prev]');
+      this.nextButton = this.querySelector('[data-upsell-next]');
+      if (!this.list) return;
+      this.loopReady = false;
+      this.setWidth = 0;
+      this.updateNav = this.updateNav.bind(this);
+      this.onScroll = this.onScroll.bind(this);
+      this.onWheel = this.onWheel.bind(this);
+      this.onPointerMove = this.onPointerMove.bind(this);
+      this.onPointerUp = this.onPointerUp.bind(this);
+      this.onClickCapture = this.onClickCapture.bind(this);
+      this.list.addEventListener('scroll', this.onScroll, { passive: true });
+      this.list.addEventListener('wheel', this.onWheel, { passive: false });
+      this.list.addEventListener('pointerdown', (e) => this.onPointerDown(e));
+      this.list.addEventListener('click', this.onClickCapture, true);
+      this.prevButton.addEventListener('click', () => this.scrollByCard(-1));
+      this.nextButton.addEventListener('click', () => this.scrollByCard(1));
+      new ResizeObserver(() => { this.measureLoop(); this.updateNav(); }).observe(this.list);
+      this.updateNav();
+    }
+    isScrollable() {
+      return this.list.scrollWidth - this.list.clientWidth > 2;
+    }
+    cardStep() {
+      const item = this.list.querySelector('.cart-upsell__item');
+      const gap = parseFloat(getComputedStyle(this.list).columnGap) || 0;
+      return (item ? item.getBoundingClientRect().width : this.list.clientWidth) + gap;
+    }
+    setupLoop() {
+      if (this.loopReady || !this.list) return;
+      const originals = Array.from(this.list.querySelectorAll('.cart-upsell__item:not([data-upsell-clone])'));
+      if (originals.length < 2 || !this.isScrollable()) return;
+      originals.forEach((item, index) => {
+        const clone = item.cloneNode(true);
+        clone.setAttribute('data-upsell-clone', '');
+        clone.setAttribute('data-upsell-clone-of', String(index));
+        clone.setAttribute('aria-hidden', 'true');
+        clone.querySelectorAll('a, button, input, select, textarea').forEach((el) => el.setAttribute('tabindex', '-1'));
+        this.list.appendChild(clone);
+      });
+      this.loopReady = true;
+      this.measureLoop();
+    }
+    measureLoop() {
+      if (!this.loopReady) { this.setWidth = 0; return; }
+      const first = this.list.querySelector('.cart-upsell__item:not([data-upsell-clone])');
+      const firstClone = this.list.querySelector('[data-upsell-clone]');
+      if (!first || !firstClone) { this.setWidth = 0; return; }
+      const width = firstClone.getBoundingClientRect().left - first.getBoundingClientRect().left;
+      this.setWidth = width > 1 ? Math.round(width) : 0;
+    }
+    normaliseLoop() {
+      if (!this.loopReady || !this.setWidth || this.isNormalising) return;
+      const width = this.setWidth;
+      const left = this.list.scrollLeft;
+      if (left < width - 0.5 && left >= -0.5) return;
+      this.isNormalising = true;
+      this.list.style.scrollBehavior = 'auto';
+      this.list.scrollLeft = ((left % width) + width) % width;
+      requestAnimationFrame(() => { this.list.style.scrollBehavior = ''; this.isNormalising = false; });
+    }
+    onScroll() {
+      this.normaliseLoop();
+      this.updateNav();
+    }
+    scrollByCard(direction) {
+      const step = this.cardStep();
+      const width = this.setWidth;
+      if (this.loopReady && width) {
+        let target = this.list.scrollLeft + direction * step;
+        if (direction < 0 && target < 0) {
+          this.isNormalising = true;
+          this.list.style.scrollBehavior = 'auto';
+          this.list.scrollLeft = width;
+          requestAnimationFrame(() => {
+            this.list.style.scrollBehavior = '';
+            this.list.scrollTo({ left: width - step, behavior: 'smooth' });
+          });
+          clearTimeout(this.normaliseTimer);
+          this.normaliseTimer = setTimeout(() => { this.isNormalising = false; }, 350);
+          return;
+        }
+        if (target >= width - 0.5) target = width;
+        this.list.scrollTo({ left: target, behavior: 'smooth' });
+        return;
+      }
+      this.list.scrollBy({ left: direction * step, behavior: 'smooth' });
+    }
+    updateNav() {
+      this.setupLoop();
+      this.measureLoop();
+      const maxScroll = this.list.scrollWidth - this.list.clientWidth;
+      const isStatic = maxScroll <= 2;
+      this.classList.toggle('cart-upsell--static', isStatic);
+      const looping = this.loopReady && !isStatic;
+      this.prevButton.disabled = isStatic || (!looping && this.list.scrollLeft <= 2);
+      this.nextButton.disabled = isStatic || (!looping && this.list.scrollLeft >= maxScroll - 2);
+    }
+    onWheel(event) {
+      if (!this.isScrollable()) return;
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+      if (delta === 0) return;
+      const width = this.setWidth;
+      if (!this.loopReady || !width) {
+        const maxScroll = this.list.scrollWidth - this.list.clientWidth;
+        if ((this.list.scrollLeft <= 0 && delta < 0) || (this.list.scrollLeft >= maxScroll - 1 && delta > 0)) return;
+        event.preventDefault();
+        this.list.scrollBy({ left: delta, behavior: 'auto' });
+        return;
+      }
+      event.preventDefault();
+      let left = this.list.scrollLeft + delta;
+      if (left < 0) left = Math.max(width - this.cardStep(), 0);
+      this.list.scrollLeft = left;
+    }
+    onPointerDown(event) {
+      if (event.pointerType !== 'mouse' || event.button !== 0) return;
+      if (!this.isScrollable()) return;
+      this.isDragging = true;
+      this.dragStartX = event.clientX;
+      this.dragStartScroll = this.list.scrollLeft;
+      this.dragMoved = 0;
+      this.list.classList.add('is-dragging');
+      window.addEventListener('pointermove', this.onPointerMove);
+      window.addEventListener('pointerup', this.onPointerUp);
+      window.addEventListener('pointercancel', this.onPointerUp);
+    }
+    onPointerMove(event) {
+      if (!this.isDragging) return;
+      const dx = event.clientX - this.dragStartX;
+      this.dragMoved = Math.max(this.dragMoved, Math.abs(dx));
+      const desired = this.dragStartScroll - dx;
+      const width = this.setWidth;
+      if (this.loopReady && width) {
+        this.list.scrollLeft = ((desired % width) + width) % width;
+      } else {
+        this.list.scrollLeft = desired;
+      }
+    }
+    onPointerUp() {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+      this.list.classList.remove('is-dragging');
+      window.removeEventListener('pointermove', this.onPointerMove);
+      window.removeEventListener('pointerup', this.onPointerUp);
+      window.removeEventListener('pointercancel', this.onPointerUp);
+      this.suppressNextClick = this.dragMoved > 4;
+      this.updateNav();
+    }
+    onClickCapture(event) {
+      if (!this.suppressNextClick) return;
+      this.suppressNextClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    add(event) {
+      const form = event.target.closest('[data-cart-upsell-form]');
+      if (!form) return;
+      event.preventDefault();
+      const button = form.querySelector('[data-upsell-button]');
+      button.setAttribute('aria-disabled', 'true');
+      button.classList.add('loading');
+      button.querySelector('.loading__spinner').classList.remove('hidden');
+
+      setTimeout(() => {
+        const li = form.closest('.cart-upsell__item');
+        const title = li.querySelector('.cart-upsell__title').textContent.trim();
+        const price = parseFloat(li.dataset.price);
+        const img = li.querySelector('.cart-upsell__image').getAttribute('src');
+
+        const line = document.createElement('div');
+        line.className = 'cart-item';
+        line.dataset.price = price.toFixed(2);
+        line.innerHTML = '<img class="cart-item__image" alt="" src="' + img + '">'
+          + '<div class="cart-item__details"><a class="cart-item__name" href="#">' + title + '</a>'
+          + '<div class="cart-item__price">' + money(price) + ' · Qty 1</div></div>';
+        items.appendChild(line);
+
+        // The preview has no server re-render, so drop the product from the
+        // original cards and the cloned set, then rebuild the loop from what
+        // remains. This mirrors the real drawer dropping the added product.
+        this.list.querySelectorAll('.cart-upsell__item').forEach((item) => {
+          const itemTitle = item.querySelector('.cart-upsell__title')?.textContent.trim();
+          if (itemTitle === title) item.remove();
+        });
+        this.list.querySelectorAll('[data-upsell-clone]').forEach((el) => el.remove());
+        this.loopReady = false;
+        this.setWidth = 0;
+        this.list.scrollLeft = 0;
+        if (!this.querySelector('.cart-upsell__item')) this.hidden = true;
+        this.updateNav();
+        refreshTotals();
+      }, 450);
+    }
+  }
+  customElements.define('cart-upsell', CartUpsellPreview);
+
+  refreshTotals();
+  drawer.classList.add('active');
+</script>
+</body>
+</html>

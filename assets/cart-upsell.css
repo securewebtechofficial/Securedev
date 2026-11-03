@@ -1,0 +1,236 @@
+/* The custom element defaults to display:inline. An inline box containing flex
+   children gets split into anonymous fragments, which draws the border as stray
+   vertical bars with missing top/bottom edges. Make it a real block. */
+.cart-upsell {
+  display: block;
+  box-sizing: border-box;
+  margin: 0 0 1.5rem;
+  padding: 1.2rem;
+  border: 0.1rem solid rgba(var(--color-foreground), 0.08);
+  border-radius: var(--media-radius, 0.6rem);
+  background: rgba(var(--color-foreground), 0.03);
+  background-clip: padding-box;
+}
+
+/* Clear inherited card borders so a theme's .card/.cart-item outline does not
+   draw a second vertical line inside the upsell block. */
+.cart-upsell__item {
+  border: 0;
+}
+
+.cart-upsell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cart-upsell__heading {
+  margin: 0;
+}
+
+.cart-upsell__nav {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.4rem;
+}
+
+.cart-upsell__nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 0.1rem solid rgba(var(--color-foreground), 0.15);
+  border-radius: 50%;
+  background: rgb(var(--color-background));
+  color: rgb(var(--color-foreground));
+  cursor: pointer;
+  transition: opacity var(--duration-short) ease;
+}
+
+.cart-upsell__nav-button:hover {
+  opacity: 0.8;
+}
+
+.cart-upsell__nav-button[disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.cart-upsell__nav-button .svg-wrapper {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.cart-upsell--static .cart-upsell__nav {
+  display: none;
+}
+
+.cart-upsell__list {
+  display: flex;
+  flex-direction: row;
+  gap: 1.2rem;
+  margin: 0;
+  padding: 0 0 0.4rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* No CSS scroll-behavior here: the loop needs instant scrollLeft writes for
+     its invisible wrap. Programmatic moves ask for behavior: 'smooth' instead. */
+  scroll-padding-inline: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cart-upsell__list::-webkit-scrollbar {
+  display: none;
+}
+
+.cart-upsell:not(.cart-upsell--static) .cart-upsell__list {
+  cursor: grab;
+}
+
+.cart-upsell__list.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  user-select: none;
+}
+
+.cart-upsell__list:focus-visible {
+  outline: 0.2rem solid rgba(var(--color-foreground), 0.5);
+  outline-offset: 0.3rem;
+}
+
+/* 60% / 40% split: the first card is fully shown, the next one peeks. */
+.cart-upsell__item {
+  display: flex;
+  flex: 0 0 calc(60% - 0.6rem);
+  gap: 1.2rem;
+  align-items: center;
+  scroll-snap-align: start;
+}
+
+/* Everything fits (e.g. a single suggestion): use the full width instead. */
+.cart-upsell--static .cart-upsell__item {
+  flex-basis: 100%;
+}
+
+.cart-upsell__media {
+  display: block;
+  flex: 0 0 auto;
+  width: 7.2rem;
+}
+
+.cart-upsell__image {
+  display: block;
+  width: 7.2rem;
+  height: 7.2rem;
+  object-fit: cover;
+  border-radius: var(--media-radius, 0.4rem);
+  background: rgba(var(--color-foreground), 0.05);
+}
+
+.cart-upsell__content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.cart-upsell__title {
+  font-size: 1.4rem;
+  line-height: 1.3;
+  color: rgb(var(--color-foreground));
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.cart-upsell__title:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.3rem;
+}
+
+.cart-upsell__price {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.3rem;
+}
+
+.cart-upsell__price-was {
+  opacity: 0.6;
+}
+
+.cart-upsell__form {
+  margin: 0;
+}
+
+.cart-upsell__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 3.6rem;
+  padding: 0.6rem 1.2rem;
+  border: 0.1rem solid rgba(var(--color-button), var(--alpha-button-border, 1));
+  border-radius: var(--buttons-radius, 0.4rem);
+  background: rgb(var(--color-button));
+  color: rgb(var(--color-button-text));
+  font-family: var(--font-body-family);
+  font-size: 1.3rem;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--duration-short) ease;
+}
+
+.cart-upsell__button:hover {
+  opacity: 0.85;
+}
+
+.cart-upsell__button.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.cart-upsell__button .loading__spinner {
+  position: static;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin: 0;
+}
+
+.cart-upsell__button .loading__spinner .spinner {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.cart-upsell__button .loading__spinner .path {
+  stroke: currentColor;
+}
+
+.cart-upsell__button-icon {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.cart-upsell__error {
+  margin: 1rem 0 0;
+  font-size: 1.3rem;
+  color: rgb(var(--color-error, 200, 0, 0));
+}
+
+@media screen and (max-width: 749px) {
+  .cart-upsell__media,
+  .cart-upsell__image {
+    width: 6.4rem;
+    height: 6.4rem;
+  }
+}
